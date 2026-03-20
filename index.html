@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Valery 💖</title>
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+canvas {
+    display: block;
+}
+</style>
+</head>
+<body>
+<canvas id="heartCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('heartCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const particles = [];
+const particleCount = 600;
+
+// TEXTOS
+const texts = ["VALERY 💖", "PÁGAME 💸 JAJA 😏"];
+let currentTextIndex = 0;
+let textParticles = [];
+
+// ================= CORAZÓN =================
+for (let i = 0; i < particleCount; i++) {
+    particles.push({
+        angle: Math.random() * Math.PI * 2,
+        speed: 0.01 + Math.random()*0.02,
+        size: Math.random() * 3 + 1,
+        color: `hsl(${Math.random()*20+340}, 80%, 60%)`
+    });
+}
+
+function heart(t, scale=10) {
+    const x = 16 * Math.pow(Math.sin(t),3);
+    const y = 13 * Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t);
+    return {x: x*scale, y: -y*scale};
+}
+
+// ================= CREAR TEXTO =================
+function createTextParticles(text) {
+    textParticles = [];
+
+    const tempCanvas = document.createElement("canvas");
+    const tctx = tempCanvas.getContext("2d");
+
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+
+    tctx.fillStyle = "#fff";
+    tctx.font = "bold 140px Arial";
+    tctx.textAlign = "center";
+    tctx.fillText(text, canvas.width/2, canvas.height/2);
+
+    const imageData = tctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+    for(let y=0; y<canvas.height; y+=6){
+        for(let x=0; x<canvas.width; x+=6){
+            const index = (y * canvas.width + x) * 4;
+            if(imageData[index+3] > 128){
+                textParticles.push({
+                    x: Math.random()*canvas.width,
+                    y: Math.random()*canvas.height,
+                    tx: x,
+                    ty: y,
+                    size: 2,
+                    alpha: 0,
+                    speed: 0.02 + Math.random()*0.03
+                });
+            }
+        }
+    }
+}
+
+createTextParticles(texts[currentTextIndex]);
+
+// Cambiar texto cada 5 segundos
+setInterval(() => {
+    currentTextIndex = (currentTextIndex + 1) % texts.length;
+    createTextParticles(texts[currentTextIndex]);
+}, 5000);
+
+// ================= ANIMACIÓN =================
+function animate() {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const time = Date.now() * 0.005;
+
+    // ❤️ CORAZÓN GRANDE
+    particles.forEach(p => {
+        p.angle += p.speed;
+
+        const scale = 30 + 6 * Math.sin(time);
+        const pos = heart(p.angle, scale);
+
+        const drawX = canvas.width/2 + pos.x;
+        const drawY = canvas.height/2 + pos.y;
+
+        const size = Math.abs(Math.sin(p.angle*3)) * p.size + 1;
+        const alpha = Math.abs(Math.sin(p.angle*5));
+
+        ctx.beginPath();
+        ctx.arc(drawX, drawY, size, 0, Math.PI*2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+
+    // ✨ TEXTO
+    textParticles.forEach(p => {
+        p.x += (p.tx - p.x) * p.speed;
+        p.y += (p.ty - p.y) * p.speed;
+
+        if(p.alpha < 1) p.alpha += 0.02;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+
+        const gradient = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,6);
+        gradient.addColorStop(0,"#ff69b4");
+        gradient.addColorStop(1,"transparent");
+
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    });
+
+    requestAnimationFrame(animate);
+}
+
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
